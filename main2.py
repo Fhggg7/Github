@@ -6,7 +6,6 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from models.conv import Net
 from models.rnn_conv import ImageRNN
-from models.alexnet import AlexNet
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,26 +18,6 @@ def imsave(img):
     npimg = (np.transpose(npimg, (1, 2, 0)) * 255).astype(np.uint8)
     im = Image.fromarray(npimg)
     im.save("./results/your_file.jpeg")
-
-
-def train(train_loader, model, criterion, optimizer, epoch, log_interval):
-    # switch to train mode
-    model.train()
-
-    for i, (input, target) in enumerate(train_loader):
-        # compute output
-        output = model(input)
-        loss = criterion(output, target)
-
-        # measure accuracy and record loss
-        # compute gradient and do SGD step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        if i% log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, i * len(input), len(train_loader.dataset),
-                100. * i / len(train_loader), loss.item()))
 
 
 def train_cnn(log_interval, model, device, train_loader, optimizer, epoch):
@@ -57,6 +36,7 @@ def train_cnn(log_interval, model, device, train_loader, optimizer, epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
+
 
 def train_rnn(log_interval, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -150,7 +130,7 @@ def main():
     # if RNN:
     #     model = ImageRNN(64, N_STEPS, N_INPUTS, N_NEURONS, N_OUTPUTS, device).to(device)
     # else:
-    #     model = AlexNet().to(device)
+    #     model = Net().to(device)
     #
     # if RNN:
     #     optimizer = optim.Adadelta(model.parameters(), lr=0.01)
@@ -163,7 +143,6 @@ def main():
     #     if RNN:
     #         train_rnn(log_interval, model, device, train_loader, optimizer, epoch)
     #     else:
-    #         train_cnn(train_loader,)
     #         train_cnn(log_interval, model, device, train_loader, optimizer, epoch)
     #
     #     test(model, device, test_loader, RNN)
@@ -173,7 +152,7 @@ def main():
     #     if RNN:
     #         torch.save(model.state_dict(), "./results/mnist_rnn.pt")
     #     else:
-    #         torch.save(model.state_dict(), "./results/alex.pt")
+    #         torch.save(model.state_dict(), "./results/mnist_cnn.pt")
     # print(datetime.datetime.now() - begin_time)
     testtrainedmodel(test_loader, device)
 
