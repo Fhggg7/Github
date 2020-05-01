@@ -16,6 +16,7 @@ class Net(nn.Module):
         # Fully connected layer: input size, output size
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
+        print("lala")
     # it is inherit from nn.Module, nn.Module have both forward() and backward()
     # In this case, forward() link all layers together,
     # backward is already implemented to compute the gradient descents.

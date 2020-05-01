@@ -21,13 +21,17 @@ def imsave(img):
     im.save("./results/your_file.jpeg")
 
 
-def train(train_loader, model, criterion, optimizer, epoch, log_interval):
+def train(log_interval, model, device, train_loader, optimizer, epoch):
     # switch to train mode
     model.train()
 
-    for i, (input, target) in enumerate(train_loader):
+    for i, (data, target) in enumerate(train_loader):
         # compute output
-        output = model(input)
+        print("train...")
+        # data, target = data.to(device), target.to(device)
+        output = model(data)
+        criterion = torch.nn.CrossEntropyLoss()
+        # loss = criterion(outputs, target)
         loss = criterion(output, target)
 
         # measure accuracy and record loss
@@ -35,13 +39,17 @@ def train(train_loader, model, criterion, optimizer, epoch, log_interval):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        if i% log_interval == 0:
+        if i % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, i * len(input), len(train_loader.dataset),
+                epoch, i * len(data), len(train_loader.dataset),
                 100. * i / len(train_loader), loss.item()))
 
 
 def train_cnn(log_interval, model, device, train_loader, optimizer, epoch):
+    if torch.cuda.is_available():
+        print("cuda available")
+    else:
+        print("sike")
     print("train cnn...")
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -52,7 +60,8 @@ def train_cnn(log_interval, model, device, train_loader, optimizer, epoch):
         # forward + backward + optimize
         output = model(data)
         loss = F.nll_loss(output, target)
-        loss.backward(); optimizer.step()
+        loss.backward()
+        optimizer.step()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
@@ -108,14 +117,14 @@ def main():
     save_model = True
 
     #RNN
-    RNN = False
+    RNN = True
     N_STEPS = 28
     N_INPUTS = 28
     N_NEURONS = 150
     N_OUTPUTS = 10
 
     if RNN:
-        epoches = 10
+        epoches = 15
 
     # Check whether you can use Cuda
     use_cuda = torch.cuda.is_available()
@@ -135,7 +144,7 @@ def main():
                        ])),
         batch_size=64, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, transform=transforms.Compose([
+        datasets.MNIST('../data', train=False, download=True, transform=transforms.Compose([
                            transforms.ToTensor()
                        ])),
         batch_size=1000, shuffle=True, **kwargs)
@@ -147,40 +156,40 @@ def main():
     # # imsave(img)
     #
     # # #####################    Build your network and run   ############################
-    # if RNN:
-    #     model = ImageRNN(64, N_STEPS, N_INPUTS, N_NEURONS, N_OUTPUTS, device).to(device)
-    # else:
-    #     model = AlexNet().to(device)
-    #
-    # if RNN:
-    #     optimizer = optim.Adadelta(model.parameters(), lr=0.01)
-    # else:
-    #     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    #
-    # scheduler = StepLR(optimizer, step_size=1, gamma=gamma)
-    #
-    # for epoch in range(1, epoches + 1):
-    #     if RNN:
-    #         train_rnn(log_interval, model, device, train_loader, optimizer, epoch)
-    #     else:
-    #         train_cnn(train_loader,)
-    #         train_cnn(log_interval, model, device, train_loader, optimizer, epoch)
-    #
-    #     test(model, device, test_loader, RNN)
-    #     scheduler.step()
-    #
-    # if save_model:
-    #     if RNN:
-    #         torch.save(model.state_dict(), "./results/mnist_rnn.pt")
-    #     else:
-    #         torch.save(model.state_dict(), "./results/alex.pt")
-    # print(datetime.datetime.now() - begin_time)
-    testtrainedmodel(test_loader, device)
+    if RNN:
+        model = AlexNet().to(device)
+    else:
+        model = Net().to(device)
+
+    if RNN:
+        optimizer = optim.Adadelta(model.parameters(), lr=0.01)
+    else:
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    scheduler = StepLR(optimizer, step_size=1, gamma=gamma)
+
+    for epoch in range(1, epoches + 1):
+        if RNN:
+            train(log_interval, model, device, train_loader, optimizer, epoch)
+        else:
+            # train_cnn(train_loader,)
+            train(log_interval, model, device, train_loader, optimizer, epoch)
+
+        test(model, device, test_loader, RNN)
+        scheduler.step()
+
+    if save_model:
+        if RNN:
+            torch.save(model.state_dict(), "./results/mnist_rnn.pt")
+        else:
+            torch.save(model.state_dict(), "./results/mnist.pt")
+    print(datetime.datetime.now() - begin_time)
+    # testtrainedmodel(test_loader, device)
 
 
 def testtrainedmodel(test_loader, device):
     testmodel = Net().to(device)
-    testmodel.load_state_dict(torch.load("./results/mnist_cnn.pt"))
+    testmodel.load_state_dict(torch.load("./results/mnist.pt"))
     testmodel.eval()
 
     for data, target in test_loader:
