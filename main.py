@@ -6,13 +6,14 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from models.conv import Net
 from models.rnn_conv import ImageRNN
+from data_loader import data_loader
 from models.alexnet import AlexNet
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import datetime
-
+import os
 # functions to show an image
 def imsave(img):
     npimg = img.numpy()
@@ -107,6 +108,20 @@ def test(model, device, test_loader, RNN):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+def load_dataset():
+    data_path ='G:\\Imagenet'
+    train_dataset = torchvision.datasets.ImageFolder(
+        root=data_path,
+        transform=torchvision.transforms.ToTensor()
+    )
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=64,
+        num_workers=0,
+        shuffle=True
+    )
+    return train_loader
+
 
 def main():
     begin_time = datetime.datetime.now()
@@ -124,7 +139,7 @@ def main():
     N_OUTPUTS = 10
 
     if RNN:
-        epoches = 15
+        epoches = 20
 
     # Check whether you can use Cuda
     use_cuda = torch.cuda.is_available()
@@ -137,17 +152,19 @@ def main():
     # Pre-processing by using the transform.Compose
     # divide into batches
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.ToTensor()
-                       ])),
-        batch_size=64, shuffle=True, **kwargs)
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, download=True, transform=transforms.Compose([
-                           transforms.ToTensor()
-                       ])),
-        batch_size=1000, shuffle=True, **kwargs)
+    train_loader, test_loader = data_loader()
+    # train_loader = load_dataset()
+    # train_loader = torch.utils.data.DataLoader(
+    #     datasets.MNIST('../data', train=True, download=True,
+    #                    transform=transforms.Compose([
+    #                        transforms.ToTensor()
+    #                    ])),
+    #     batch_size=64, shuffle=True, **kwargs)
+    # test_loader = torch.utils.data.DataLoader(
+    #     datasets.MNIST('../data', train=False, download=True, transform=transforms.Compose([
+    #                        transforms.ToTensor()
+    #                    ])),
+    #     batch_size=1000, shuffle=True, **kwargs)
 
     # # get some random training images
     # dataiter = iter(train_loader)
